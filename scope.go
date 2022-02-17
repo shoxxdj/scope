@@ -151,8 +151,7 @@ func main(){
 
 		if(*category==""){
 			stmt.Exec(*urlToAdd,"nc")
-		}
-		else{
+		}else{
 			stmt.Exec(*urlToAdd,*category)
 		}
 		
