@@ -55,6 +55,7 @@ func main(){
 	fullDetails:=  flag.Bool("full",false,"Get full details (Location, url and id)")
 	urlToAdd:= 	flag.String("a","","The url to add in the database")
 	urlToDel:=		flag.Int("d",-1,"The url ID to delete from the database")
+	category := flag.String("c","Default","The category to set the url in / search in")
 	
 
 	flag.Usage = func() {
@@ -93,7 +94,7 @@ func main(){
 	defer db.Close()
 
 	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS scope (id INTEGER PRIMARY KEY AUTOINCREMENT, value text)
+	CREATE TABLE IF NOT EXISTS scope (id INTEGER PRIMARY KEY AUTOINCREMENT, value text, category text)
 	`
 	_,err = db.Exec(sqlStmt)
 	if err != nil {
@@ -119,12 +120,12 @@ func main(){
 		if err!=nil{
 			log.Fatal(err)
 		}
-		sqlStmt = "CREATE TABLE scope (id INTEGER PRIMARY KEY AUTOINCREMENT, value text)"
+		sqlStmt = "CREATE TABLE scope (id INTEGER PRIMARY KEY AUTOINCREMENT, value text, category text)"
 		_,err = db.Exec(sqlStmt)
 		if err!=nil{
 			log.Fatal(err)
 		}
-		sqlStmt = "INSERT INTO scope(value) SELECT value from old_scope"
+		sqlStmt = "INSERT INTO scope(value,category) SELECT value from old_scope"
 		_,err = db.Exec(sqlStmt)
 		if err!=nil{
 			log.Fatal(err)
@@ -142,40 +143,78 @@ func main(){
 		if err != nil {
 			log.Fatal(err)
 		}
-		stmt, err := tx.Prepare("insert into scope(value) values(?)")
+		stmt, err := tx.Prepare("insert into scope(value,category) values(?,?)")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer stmt.Close()
-		stmt.Exec(*urlToAdd)
+		stmt.Exec(*urlToAdd,*category)
 		tx.Commit()
 		fmt.Println(chalk.Green, "[+]", chalk.Reset, "Item added")
 	}
 
 	if *urlToAdd == "" && *urlToDel ==-1{
-		sqlStmt = "Select id,value from scope"
-		rows,err := db.Query(sqlStmt)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
 
-		if(*fullDetails){
-			fmt.Println("|",*dbLocation,"|")
-		}
-
-		for rows.Next(){
-			var id int
-			var value string
-			err = rows.Scan(&id,&value)
-			if err != nil{
+		if *category =="Default"{
+			sqlStmt = "Select id,value,category from scope"
+			rows,err := db.Query(sqlStmt)
+			if err != nil {
 				log.Fatal(err)
 			}
+			defer rows.Close()
+
 			if(*fullDetails){
-				fmt.Println(id,value)
-			}else{
-				fmt.Println(value)
+				fmt.Println("|",*dbLocation,"|")
 			}
+
+			for rows.Next(){
+				var id int
+				var value string
+				var category string
+
+				err = rows.Scan(&id,&value,&category)
+				if err != nil{
+					log.Fatal(err)
+				}
+
+				if(*fullDetails){
+					fmt.Println(id,"|",value,"|",category)
+				}else{
+					fmt.Println(value)
+				}
+			}
+		}else{
+			rows,err := db.Query("Select id,value,category from scope where category=?",*category)
+			if err!=nil{
+				log.Fatal(err)
+			}
+			//defer stmt.Close()
+			//rows,err:=stmt.Exec(*category)
+			if err!=nil{
+				log.Fatal(err)
+			}
+			defer rows.Close()
+
+			if(*fullDetails){
+				fmt.Println("|",*dbLocation,"|")
+			}
+			for rows.Next(){
+				var id int
+				var value string
+				var scope string 
+				err = rows.Scan(&id,&value,&scope)
+				if err!=nil{
+					log.Fatal(err)
+				}
+				if(*fullDetails){
+					fmt.Println(id,value,scope)
+				}else{
+					fmt.Println(value)
+				}
+			}
+
+
 		}
+
 	}
 }
