@@ -55,7 +55,7 @@ func main(){
 	fullDetails:=  flag.Bool("full",false,"Get full details (Location, url and id)")
 	urlToAdd:= 	flag.String("a","","The url to add in the database")
 	urlToDel:=		flag.Int("d",-1,"The url ID to delete from the database")
-	category := flag.String("c","Default","The category to set the url in / search in")
+	category := flag.String("c","","The category to set the url in / search in")
 	
 
 	flag.Usage = func() {
@@ -148,6 +148,12 @@ func main(){
 			log.Fatal(err)
 		}
 		defer stmt.Close()
+
+		if(*category==""){
+			*category="nc"
+		}
+
+
 		stmt.Exec(*urlToAdd,*category)
 		tx.Commit()
 		fmt.Println(chalk.Green, "[+]", chalk.Reset, "Item added")
@@ -155,7 +161,7 @@ func main(){
 
 	if *urlToAdd == "" && *urlToDel ==-1{
 
-		if *category =="Default"{
+		if *category ==""{
 			sqlStmt = "Select id,value,category from scope"
 			rows,err := db.Query(sqlStmt)
 			if err != nil {
