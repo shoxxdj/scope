@@ -150,11 +150,12 @@ func main(){
 		defer stmt.Close()
 
 		if(*category==""){
-			*category="nc"
+			stmt.Exec(*urlToAdd,"nc")
 		}
-
-
-		stmt.Exec(*urlToAdd,*category)
+		else{
+			stmt.Exec(*urlToAdd,*category)
+		}
+		
 		tx.Commit()
 		fmt.Println(chalk.Green, "[+]", chalk.Reset, "Item added")
 	}
