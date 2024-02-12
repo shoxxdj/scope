@@ -56,6 +56,7 @@ func main(){
 	urlToAdd:= 	flag.String("a","","The url to add in the database")
 	urlToDel:=		flag.Int("d",-1,"The url ID to delete from the database")
 	category := flag.String("c","","The category to set the url in / search in")
+	query := flag.String("q","","The url to search in scope")
 	
 
 	flag.Usage = func() {
@@ -159,7 +160,38 @@ func main(){
 		fmt.Println(chalk.Green, "[+]", chalk.Reset, "Item added")
 	}
 
-	if *urlToAdd == "" && *urlToDel ==-1{
+	if(*query!=""){
+		rows,err := db.Query("Select id,value,category from scope where value=?",*query)
+		if err!=nil{
+			log.Fatal(err)
+		}
+		//defer stmt.Close()
+		//rows,err:=stmt.Exec(*category)
+		if err!=nil{
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		if(*fullDetails){
+			fmt.Println("|",*dbLocation,"|")
+		}
+		for rows.Next(){
+			var id int
+			var value string
+			var scope string 
+			err = rows.Scan(&id,&value,&scope)
+			if err!=nil{
+				log.Fatal(err)
+			}
+			if(*fullDetails){
+				fmt.Println(id,value,scope)
+			}else{
+				fmt.Println(value)
+			}
+		}
+	}
+
+	if *urlToAdd == "" && *urlToDel ==-1 && *query==""{
 
 		if *category ==""{
 			sqlStmt = "Select id,value,category from scope"
